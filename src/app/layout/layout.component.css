@@ -1,0 +1,55 @@
+:root{
+  --sidebar-w: 260px;
+  --accent: #e6f0f6;
+  --muted: #a8b7bf;
+  --bg: #f3f6f7;
+  --card-bg: #e9f0f4;
+}
+
+.ww-layout{
+  display:flex;
+  min-height:100vh;
+  background: linear-gradient(180deg,var(--bg), #eef3f5);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.ww-sidebar{
+  width:var(--sidebar-w);
+  background: linear-gradient(180deg,#445b66,#3b4f58);
+  color: #fff;
+  padding:28px 20px;
+  box-sizing:border-box;
+}
+.ww-profile{ text-align:center; margin-bottom:20px }
+.ww-avatar{ width:96px; height:96px; border-radius:50%; object-fit:cover; border:4px solid rgba(255,255,255,0.08)}
+.ww-name{ margin:12px 0 0; font-weight:600 }
+
+.ww-nav ul{ list-style:none; padding:0; margin:22px 0 0 }
+.ww-nav li{ padding:12px 10px; color:rgba(255,255,255,0.9); display:flex; align-items:center; gap:10px; cursor:pointer; border-radius:8px }
+.ww-nav li:hover{ background: rgba(255,255,255,0.03) }
+.ww-nav li.active{ background: rgba(255,255,255,0.06); font-weight:600 }
+.ww-nav li.danger{ color: #ffd1d1 }
+.ww-icon{ width:28px; text-align:center }
+
+.ww-main{ flex:1; padding:36px; box-sizing:border-box }
+.ww-card{ background:var(--card-bg); border-radius:14px; padding:28px; box-shadow:0 8px 20px rgba(45,65,78,0.12); max-width:900px }
+.ww-card-header{ display:flex; align-items:center; gap:16px; margin-bottom:18px }
+.ww-avatar-sm{ width:56px; height:56px; border-radius:50%; object-fit:cover; border:3px solid rgba(0,0,0,0.04) }
+.ww-card h2{ margin:0; font-weight:600 }
+
+.ww-actions-grid{ display:grid; grid-template-columns:repeat(3,120px); gap:18px; justify-content:start }
+.ww-action{ background: #f5fbff; border-radius:12px; padding:18px; width:120px; height:120px; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#294955; box-shadow:0 6px 14px rgba(24,44,56,0.06); text-align:center }
+.ww-action.primary{ background:#cfeaf7; box-shadow:0 8px 22px rgba(46,105,130,0.12) }
+.ww-action-icon{ font-size:28px; margin-bottom:10px }
+.ww-action-label{ font-size:14px }
+
+.ww-categories{ margin-top:28px }
+.ww-cats-grid{ display:grid; grid-template-columns:repeat(6,1fr); gap:12px; margin-top:12px }
+.ww-cat{ background: white; border-radius:10px; padding:12px; display:flex; flex-direction:column; align-items:center; gap:8px; box-shadow:0 6px 14px rgba(24,44,56,0.05) }
+.ww-cat-icon{ font-size:22px }
+.ww-cat-title{ font-size:13px }
+
+@media(max-width:900px){
+  .ww-actions-grid{ grid-template-columns:repeat(2,120px) }
+  .ww-cats-grid{ grid-template-columns:repeat(3,1fr) }
+}

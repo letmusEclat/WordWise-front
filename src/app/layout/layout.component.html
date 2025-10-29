@@ -1,0 +1,45 @@
+<div class="layout">
+	<aside class="sidebar">
+		<div class="sidebar__profile">
+			<div class="sidebar__avatar">
+				<img [src]="user.avatar" [alt]="user.name" />
+			</div>
+			<h1 class="sidebar__name">{{ user.name }}</h1>
+		</div>
+
+		<nav class="sidebar__nav">
+			<button
+				type="button"
+				class="sidebar__item"
+				*ngFor="let item of navigation"
+				[class.sidebar__item--active]="item.active"
+				[class.sidebar__item--danger]="item.variant === 'danger'"
+			>
+				<span class="sidebar__icon material-symbols-rounded">{{ item.icon }}</span>
+				<span class="sidebar__label">{{ item.label }}</span>
+			</button>
+		</nav>
+	</aside>
+
+	<main class="main">
+		<div class="main__card">
+			<div class="main__header">
+				<div class="main__avatar">
+					<img [src]="user.avatar" [alt]="user.name" />
+				</div>
+				<h2>{{ user.name }}</h2>
+			</div>
+
+			<div class="main__sections">
+				<app-section-card
+					*ngFor="let section of sections"
+					[label]="section.label"
+					[icon]="section.icon"
+					[active]="!!section.active"
+					(select)="onSectionSelect(section)"
+				></app-section-card>
+			</div>
+		</div>
+	</main>
+</div>
+
