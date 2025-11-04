@@ -14,6 +14,7 @@
 				*ngFor="let item of navigation"
 				[class.sidebar__item--active]="item.active"
 				[class.sidebar__item--danger]="item.variant === 'danger'"
+				(click)="onNavClick(item)"
 			>
 				<span class="sidebar__icon material-symbols-rounded">{{ item.icon }}</span>
 				<span class="sidebar__label">{{ item.label }}</span>
@@ -22,7 +23,7 @@
 	</aside>
 
 	<main class="main">
-		<div class="main__card">
+		<div class="main__card" *ngIf="currentView === 'sections'">
 			<div class="main__header">
 				<div class="main__avatar">
 					<img [src]="user.avatar" [alt]="user.name" />
@@ -40,6 +41,161 @@
 				></app-section-card>
 			</div>
 		</div>
+
+		<div class="main__card main__card--practice" *ngIf="currentView === 'practice'">
+			<button type="button" class="btn btn--ghost practice__back" (click)="exitPracticeSession()">
+				<span class="material-symbols-rounded">arrow_back</span>
+				Devolver
+			</button>
+			<div class="practice__content">
+				<div class="practice" *ngIf="practiceWords.length && !practiceFinished; else practiceEmpty">
+				<div class="practice__panel">
+					<div class="practice__card" [class.practice__card--revealed]="practiceRevealed" (click)="togglePracticeReveal()">
+						<ng-container *ngIf="!practiceRevealed; else practiceReveal">
+							<ng-container *ngIf="practiceCurrentWord?.imageUrl; else practicePlaceholder">
+								<img [src]="practiceCurrentWord?.imageUrl" [alt]="practiceCurrentWord?.title" />
+							</ng-container>
+							<ng-template #practicePlaceholder>
+								<div class="practice__placeholder material-symbols-rounded">image</div>
+							</ng-template>
+						</ng-container>
+						<ng-template #practiceReveal>
+							<h3>{{ practiceCurrentWord?.title || '—' }}</h3>
+							<p>{{ practiceCurrentWord?.meaning || 'Sin significado registrado.' }}</p>
+						</ng-template>
+						<div class="practice__progress">{{ practiceIndex + 1 }}/{{ practiceWords.length }}</div>
+					</div>
+					<div class="practice__actions">
+						<button type="button" class="practice__btn practice__btn--skip" (click)="handlePracticeDislike()">
+							<span class="material-symbols-rounded">thumb_down</span>
+							No la recordé
+						</button>
+						<button type="button" class="practice__btn practice__btn--like" (click)="handlePracticeLike()">
+							<span class="material-symbols-rounded">thumb_up</span>
+							¡Aprendida!
+						</button>
+					</div>
+				</div>
+			</div>
+			<aside class="practice__stats">
+				<div class="practice__stat-block">
+					<h4>Avance</h4>
+					<div class="practice__counter">
+						<span>{{ practiceProgressCount }}/{{ practiceWords.length || practiceSessionSize }}</span>
+						<small>Sesión de {{ practiceWords.length || practiceSessionSize }}</small>
+					</div>
+				</div>
+				<div class="practice__stat-block">
+					<h4>Palabras nuevas</h4>
+					<div class="practice__counter practice__counter--secondary">
+						<span>{{ practiceLearned }}</span>
+						<small>Aprendidas</small>
+					</div>
+					<p class="practice__note" *ngIf="practiceForgotten">{{ practiceForgotten }} por repasar</p>
+				</div>
+				<button type="button" class="btn btn--ghost practice__restart" *ngIf="practiceFinished" (click)="restartPractice()">Reiniciar sesión</button>
+			</aside>
+			</div>
+		</div>
+
+		<ng-template #practiceEmpty>
+			<div class="practice__empty">
+				<h3 *ngIf="practiceFinished && practiceWords.length">¡Sesión completada!</h3>
+				<h3 *ngIf="!practiceWords.length">No hay palabras suficientes</h3>
+				<p *ngIf="practiceFinished && practiceWords.length">Puedes reiniciar para repasar nuevamente.</p>
+				<p *ngIf="!practiceWords.length">Agrega nuevas palabras para practicar.</p>
+				<div class="practice__empty-actions">
+					<button type="button" class="btn btn--ghost" (click)="restartPractice()" *ngIf="practiceWords.length">Reiniciar</button>
+					<button type="button" class="btn btn--primary" (click)="openAddWord()" *ngIf="!practiceWords.length">Agregar palabra</button>
+				</div>
+			</div>
+		</ng-template>
+
+		<div class="main__card main__card--categories" *ngIf="currentView === 'categories'">
+			<div class="main__categories">
+				<app-section-card
+					*ngFor="let cat of categories"
+					[label]="cat.name"
+					[icon]="cat.icon"
+					[active]="!!cat.active"
+					(select)="onCategoryClick(cat)"
+				></app-section-card>
+			</div>
+		</div>
+
+		<div class="main__card main__card--search" *ngIf="currentView === 'search'">
+			<div class="search-bar">
+				<div class="search-bar__menu material-symbols-rounded" title="Menú">menu</div>
+				<input class="search-bar__input" placeholder="Hinted search text" />
+				<div class="search-bar__icon material-symbols-rounded" title="Buscar">search</div>
+			</div>
+			<div class="search-category-chip" *ngIf="activeCategory">
+				<span class="material-symbols-rounded">label</span>
+				{{ activeCategory.name }}
+				<button type="button" (click)="clearCategoryFilter()">×</button>
+			</div>
+			<div class="words-grid">
+				<app-word-card
+					[word]="{ title: 'Agregar', addCard: true }"
+					(add)="openAddWord()"
+				></app-word-card>
+				<app-word-card
+					*ngFor="let w of filteredWords"
+					[word]="w"
+					(delete)="requestDeleteWord($event)"
+					(edit)="openEditWord($event)"
+					(favoriteToggle)="toggleFavorite($event)"
+				></app-word-card>
+			</div>
+		</div>
+
+		<!-- Overlay confirm delete word -->
+		<div class="delete-word-overlay" *ngIf="wordToDelete">
+			<div class="delete-word-overlay__panel">
+				<p class="delete-word-overlay__text">¿Está seguro que desea eliminar la palabra?</p>
+				<div class="delete-word-overlay__word-info" *ngIf="wordToDelete">
+					<span class="material-symbols-rounded" *ngIf="!wordToDelete.imageUrl">image</span>
+					<img *ngIf="wordToDelete.imageUrl" [src]="wordToDelete.imageUrl" [alt]="wordToDelete.title" />
+					<div class="delete-word-overlay__meta">
+						<strong>{{ wordToDelete.title }}</strong>
+						<small *ngIf="wordToDelete.meaning">{{ wordToDelete.meaning }}</small>
+					</div>
+				</div>
+				<div class="delete-word-overlay__actions">
+					<button type="button" class="btn btn--ghost" (click)="cancelDeleteWord()">Cancelar</button>
+					<button type="button" class="btn btn--danger" (click)="confirmDeleteWord()">Eliminar</button>
+				</div>
+			</div>
+		</div>
+
+		<div class="main__card main__card--logout" *ngIf="currentView === 'logout'">
+			<div class="logout-confirm">
+				<p>¿Está seguro que desea salir de la sesión?</p>
+				<div class="logout-confirm__actions">
+					<button type="button" class="btn btn--ghost" (click)="cancelLogout()">Cancelar</button>
+					<button type="button" class="btn btn--primary" (click)="confirmLogout()">Salir</button>
+				</div>
+			</div>
+		</div>
+
+		<div class="main__card main__card--delete-account" *ngIf="currentView === 'deleteAccount'">
+			<div class="delete-confirm">
+				<p>¿Está seguro que desea eliminar la cuenta?</p>
+				<div class="delete-confirm__actions">
+					<button type="button" class="btn btn--ghost" (click)="cancelDeleteAccount()">Cancelar</button>
+					<button type="button" class="btn btn--danger" (click)="confirmDeleteAccount()">Eliminar</button>
+				</div>
+			</div>
+		</div>
+
+		<app-add-word-modal
+			*ngIf="showAddModal"
+			[word]="editingWord"
+			[categories]="categories"
+			[defaultCategoryId]="activeCategory?.id || categories[0]?.id"
+			(save)="saveNewWord($event)"
+			(cancel)="cancelAddWord()"
+		></app-add-word-modal>
 	</main>
 </div>
 

@@ -1,0 +1,16 @@
+<div class="word-card" [class.word-card--add]="word.addCard" (click)="word.addCard ? onAddClick() : onRootClick()">
+  <div class="word-card__image" *ngIf="!word.addCard">
+    <ng-container *ngIf="word.imageUrl; else placeholder">
+      <img [src]="word.imageUrl" [alt]="word.title" />
+    </ng-container>
+    <ng-template #placeholder>
+      <div class="word-card__img-placeholder material-symbols-rounded">image</div>
+    </ng-template>
+    <button type="button" class="word-card__favorite material-symbols-rounded" [class.word-card__favorite--active]="word.favorite" (click)="onFavoriteClick($event)" aria-label="Favorito">star</button>
+    <button type="button" class="word-card__delete material-symbols-rounded" (click)="onDeleteClick($event)" aria-label="Eliminar">delete</button>
+  </div>
+  <div class="word-card__image" *ngIf="word.addCard">
+    <div class="word-card__img-placeholder material-symbols-rounded">add</div>
+  </div>
+  <div class="word-card__title">{{ word.title }}</div>
+</div>

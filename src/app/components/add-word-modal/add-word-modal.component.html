@@ -1,0 +1,51 @@
+<div class="modal">
+  <div class="modal__panel">
+    <h2 class="modal__title">{{ word ? 'Editar palabra:' : 'Crear nueva palabra:' }}</h2>
+
+    <form (ngSubmit)="submit()" #f="ngForm" class="modal__form">
+      <div class="modal__field">
+        <label>Nombre:</label>
+        <input name="title" [(ngModel)]="form.title" placeholder="Ingresa el nombre de la palabra" required />
+      </div>
+
+      <div class="modal__field">
+        <label>Significado:</label>
+        <textarea name="meaning" [(ngModel)]="form.meaning" placeholder="Ingresa el significado de la palabra" required></textarea>
+      </div>
+
+      <div class="modal__field">
+        <label>Categoría:</label>
+        <select name="category" [(ngModel)]="form.category" required>
+          <option *ngFor="let cat of categories" [value]="cat.id">{{ cat.name }}</option>
+        </select>
+      </div>
+
+      <div class="modal__field">
+        <label>Imagen:</label>
+        <div class="modal__upload">
+          <div class="modal__upload-preview" *ngIf="form.imagePreview; else uploadPlaceholder">
+            <img [src]="form.imagePreview" alt="Preview" />
+          </div>
+          <ng-template #uploadPlaceholder>
+            <div class="modal__upload-drop">
+              <span class="material-symbols-rounded">image</span>
+            </div>
+          </ng-template>
+          <input type="file" (change)="onFileChange($event)" accept="image/*" />
+          <small>Subir imagen</small>
+        </div>
+      </div>
+
+      <div class="modal__field modal__favorite">
+        <label class="modal__favorite-label">
+          <input type="checkbox" name="favorite" [(ngModel)]="form.favorite" /> Marcar como favorito
+        </label>
+      </div>
+
+      <div class="modal__actions">
+        <button type="button" class="btn btn--ghost" (click)="close()">Cancelar</button>
+        <button type="submit" [disabled]="!form.title || !form.meaning" class="btn btn--primary">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
