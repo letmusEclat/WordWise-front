@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
 import { WordItem } from '../components/word-card/word-card.component';
 import { NewWordForm } from '../components/add-word-modal/add-word-modal.component';
 import { WordDataService, Category } from '../services/word-data.service';
@@ -46,13 +47,14 @@ export class LayoutComponent implements OnInit {
     { label: 'Avance', icon: 'assets/icons/mountain-flag.svg' },
     { label: 'Favoritos', icon: 'assets/icons/favorite-star.svg' },
     { label: 'Practicar', icon: 'assets/icons/calendar-sun.svg', active: true },
-    { label: 'Por repasar', icon: 'assets/icons/flashcards.svg' },
-    { label: 'Olvidados', icon: 'assets/icons/brain-spiral.svg' }
+    { label: 'Por repasar', icon: 'assets/icons/flashcards.svg' }
   ];
 
   public categories: CategoryView[] = [];
   public words: WordItem[] = [];
   public activeCategory?: CategoryView;
+  public searchMode: 'all' | 'favorites' | 'review' = 'all';
+  public reviewWords: WordItem[] = [];
 
   public showAddModal = false;
   public editingWord?: NewWordForm;
@@ -66,17 +68,29 @@ export class LayoutComponent implements OnInit {
   public practiceFinished = false;
   public practiceSessionSize = 10;
 
-  constructor(private data: WordDataService) {}
+  constructor(private data: WordDataService, private router: Router) {}
 
   ngOnInit(): void {
     this.categories = this.data.getCategories().map(cat => ({ ...cat }));
     this.highlightDefaultCategory();
     this.words = this.data.getWords();
+    this.reviewWords = this.data.getReviewWords();
   }
 
   get filteredWords(): WordItem[] {
-    if (!this.activeCategory) return this.words;
-    return this.words.filter(w => w.category === this.activeCategory!.id);
+    const categoryId = this.activeCategory?.id;
+
+    if (this.searchMode === 'favorites') {
+      return this.words.filter(w => w.favorite && (!categoryId || w.category === categoryId));
+    }
+
+    if (this.searchMode === 'review') {
+      return this.reviewWords.filter(w => !categoryId || w.category === categoryId);
+    }
+
+    if (!categoryId) return this.words;
+
+    return this.words.filter(w => w.category === categoryId);
   }
   public onNavClick(item: NavigationItem): void {
     this.navigation = this.navigation.map(i => ({ ...i, active: i.label === item.label }));
@@ -96,15 +110,17 @@ export class LayoutComponent implements OnInit {
       return;
     }
     if (item.label === 'Ver categorías') {
+      this.searchMode = 'all';
       this.currentView = 'categories';
       this.clearCategoryFilter(false);
+      this.previousView = 'categories';
     } else if (item.label === 'Buscar palabra') {
-      this.currentView = 'search';
-      if (!this.activeCategory) {
-        this.clearCategoryActiveState();
-      }
+      this.activateSearchView('all');
     } else {
+      this.searchMode = 'all';
       this.currentView = 'sections';
+      this.previousView = 'sections';
+      this.navigation = this.navigation.map(i => ({ ...i, active: i.label === 'Perfil' }));
     }
   }
 
@@ -115,15 +131,29 @@ export class LayoutComponent implements OnInit {
     }));
     if (section.label === 'Practicar') {
       this.startPracticeSession();
+      return;
     }
+    if (section.label === 'Favoritos') {
+      this.activateSearchView('favorites', { preserveCategory: true });
+      return;
+    }
+    if (section.label === 'Por repasar') {
+      this.activateSearchView('review', { preserveCategory: true });
+      return;
+    }
+    this.currentView = 'sections';
+    this.previousView = 'sections';
+    this.searchMode = 'all';
+    this.navigation = this.navigation.map(i => ({ ...i, active: i.label === 'Perfil' }));
   }
 
   public onCategoryClick(cat: CategoryView): void {
-    this.categories = this.categories.map(c => ({ ...c, active: c.id === cat.id }));
-    this.activeCategory = this.categories.find(c => c.id === cat.id);
-    this.currentView = 'search';
-    // sincronizar navegación
-    this.navigation = this.navigation.map(i => ({ ...i, active: i.label === 'Buscar palabra' }));
+    this.setActiveCategory(cat.id);
+    this.searchMode = 'all';
+    this.currentView = 'sections';
+    this.previousView = 'sections';
+    this.sections = this.sections.map(item => ({ ...item, active: item.label === 'Practicar' }));
+    this.navigation = this.navigation.map(i => ({ ...i, active: i.label === 'Perfil' }));
   }
 
   public openAddWord(): void {
@@ -159,7 +189,7 @@ export class LayoutComponent implements OnInit {
       });
     }
 
-    this.words = this.data.getWords();
+    this.refreshWords();
     this.showAddModal = false;
   }
 
@@ -170,7 +200,7 @@ export class LayoutComponent implements OnInit {
   public confirmDeleteWord(): void {
     if (this.wordToDelete) {
       this.data.deleteWord(this.wordToDelete.id!);
-      this.words = this.data.getWords();
+      this.refreshWords();
       this.wordToDelete = undefined;
     }
   }
@@ -196,7 +226,7 @@ export class LayoutComponent implements OnInit {
     word.favorite = !word.favorite;
     if (word.id) {
       this.data.updateWord({ ...word });
-      this.words = this.data.getWords();
+      this.refreshWords();
     }
   }
 
@@ -207,11 +237,9 @@ export class LayoutComponent implements OnInit {
   }
 
   public confirmLogout(): void {
-    // Placeholder de lógica real de logout
-    console.log('Sesión cerrada');
-    // Después del logout regresamos a categorías y activamos su item
-    this.currentView = 'categories';
-    this.navigation = this.navigation.map(i => ({ ...i, active: i.label === 'Ver categorías' }));
+    // Placeholder de lógica real de logout (limpieza de sesión si aplica)
+    // Navegar a pantalla de login
+    this.router.navigate(['/login']);
   }
 
   public cancelDeleteAccount(): void {
@@ -220,27 +248,47 @@ export class LayoutComponent implements OnInit {
   }
 
   public confirmDeleteAccount(): void {
-    console.log('Cuenta eliminada');
-    // Simulamos fin de sesión luego de eliminar cuenta
-    this.currentView = 'categories';
-    this.navigation = this.navigation.map(i => ({ ...i, active: i.label === 'Ver categorías' }));
+    // Placeholder de lógica real de eliminación
+    this.router.navigate(['/login']);
   }
 
   public clearCategoryFilter(removeHighlight = true): void {
-    this.activeCategory = undefined;
     if (removeHighlight) {
-      this.clearCategoryActiveState();
+      this.setActiveCategory(undefined);
     } else {
+      this.activeCategory = undefined;
       this.highlightDefaultCategory();
     }
   }
 
-  private clearCategoryActiveState(): void {
-    this.categories = this.categories.map(c => ({ ...c, active: false }));
-  }
-
   private highlightDefaultCategory(): void {
     this.categories = this.categories.map((c, idx) => ({ ...c, active: idx === 0 }));
+  }
+
+  private setActiveCategory(categoryId: string | undefined): void {
+    this.categories = this.categories.map(c => ({ ...c, active: !!categoryId && c.id === categoryId }));
+    this.activeCategory = categoryId ? this.categories.find(c => c.id === categoryId) : undefined;
+  }
+
+  private activateSearchView(mode: 'all' | 'favorites' | 'review', options: { preserveCategory?: boolean } = {}): void {
+    this.searchMode = mode;
+    this.currentView = 'search';
+    this.previousView = 'search';
+    const categoryId = options.preserveCategory ? this.activeCategory?.id : undefined;
+    this.setActiveCategory(categoryId);
+    this.navigation = this.navigation.map(i => ({ ...i, active: i.label === 'Buscar palabra' }));
+    if (mode === 'review') {
+      this.reviewWords = this.data.getReviewWords();
+    }
+  }
+
+  public clearSearchMode(): void {
+    this.activateSearchView('all', { preserveCategory: true });
+  }
+
+  private refreshWords(): void {
+    this.words = this.data.getWords();
+    this.reviewWords = this.data.getReviewWords();
   }
 
   // Practice helpers
@@ -256,7 +304,8 @@ export class LayoutComponent implements OnInit {
   }
 
   public startPracticeSession(): void {
-    this.practiceWords = this.data.getRandomWords(this.practiceSessionSize);
+    const categoryId = this.activeCategory?.id;
+    this.practiceWords = this.data.getRandomWords(this.practiceSessionSize, categoryId);
     this.practiceIndex = 0;
     this.practiceRevealed = false;
     this.practiceLearned = 0;
@@ -265,6 +314,7 @@ export class LayoutComponent implements OnInit {
     this.sections = this.sections.map(item => ({ ...item, active: item.label === 'Practicar' }));
     this.currentView = 'practice';
     this.previousView = 'practice';
+    this.navigation = this.navigation.map(item => ({ ...item, active: item.label === 'Perfil' }));
   }
 
   public togglePracticeReveal(): void {
@@ -278,6 +328,10 @@ export class LayoutComponent implements OnInit {
     if (this.practiceFinished || !this.practiceCurrentWord) {
       return;
     }
+    if (this.practiceCurrentWord.id) {
+      this.data.clearWordFromReview(this.practiceCurrentWord.id);
+      this.reviewWords = this.data.getReviewWords();
+    }
     this.practiceLearned++;
     this.advancePracticeQueue();
   }
@@ -285,6 +339,10 @@ export class LayoutComponent implements OnInit {
   public handlePracticeDislike(): void {
     if (this.practiceFinished || !this.practiceCurrentWord) {
       return;
+    }
+    if (this.practiceCurrentWord.id) {
+      this.data.markWordForReview(this.practiceCurrentWord.id);
+      this.reviewWords = this.data.getReviewWords();
     }
     this.practiceForgotten++;
     this.advancePracticeQueue();
@@ -303,6 +361,7 @@ export class LayoutComponent implements OnInit {
     this.practiceFinished = false;
     this.currentView = 'sections';
     this.previousView = 'sections';
+    this.sections = this.sections.map(item => ({ ...item, active: item.label === 'Practicar' }));
     this.navigation = this.navigation.map(item => ({ ...item, active: item.label === 'Perfil' }));
   }
 

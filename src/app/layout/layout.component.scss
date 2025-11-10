@@ -225,6 +225,29 @@
   color: #2b3c51;
 }
 
+.main__profile {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+}
+
+.main__category-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgba(70, 110, 160, 0.12);
+  color: #2e4358;
+  font-size: 13px;
+  border: 1px solid rgba(70, 110, 160, 0.28);
+}
+
+.main__category-tag .material-symbols-rounded {
+  font-size: 18px;
+}
+
 .main__sections {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
@@ -262,8 +285,16 @@
 .search-category-chip span { font-size:18px; }
 .search-category-chip button { background:transparent; border:none; color:#2e4358; font-size:16px; cursor:pointer; padding:0 0 0 6px; }
 .search-category-chip button:hover { color:#c22c3a; }
+.search-filter-chip { display:inline-flex; align-items:center; gap:8px; background:rgba(255,255,255,0.65); color:#2b3c51; border:1px solid rgba(140,160,185,0.45); padding:6px 14px; border-radius:999px; font-size:13px; margin:0 auto 20px; box-shadow:0 10px 20px rgba(31,50,73,0.18); }
+.search-filter-chip span { font-size:18px; color:#2b3c51; }
+.search-filter-chip button { background:transparent; border:none; color:inherit; font-size:16px; cursor:pointer; padding:0 0 0 6px; }
+.search-filter-chip button:hover { color:#d13b4a; }
 .words-grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap:34px 46px; justify-items:center; }
 @media (max-width: 620px){ .words-grid { gap:24px 26px; } }
+.search-empty { text-align:center; padding:40px 24px; color:#2e4358; display:flex; flex-direction:column; gap:18px; align-items:center; }
+.search-empty p { margin:0; color:#526476; font-size:14px; }
+.search-empty--review { color:#2b3c51; }
+.search-empty .btn { min-width:140px; }
 
 /* Logout confirmation */
 .main__card--logout { max-width: 760px; display:flex; align-items:center; justify-content:center; }

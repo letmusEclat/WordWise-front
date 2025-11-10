@@ -29,6 +29,7 @@ export class WordDataService {
   ];
 
   private nextId = 11;
+  private reviewWordIds = new Set<number>();
 
   getCategories(): Category[] {
     return this.categories.map(cat => ({ ...cat }));
@@ -38,8 +39,9 @@ export class WordDataService {
     return this.words.map(word => ({ ...word }));
   }
 
-  getRandomWords(count: number): WordItem[] {
-    const shuffled = [...this.words];
+  getRandomWords(count: number, categoryId?: string): WordItem[] {
+    const pool = categoryId ? this.words.filter(word => word.category === categoryId) : this.words;
+    const shuffled = [...pool];
     for (let i = shuffled.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
@@ -59,10 +61,27 @@ export class WordDataService {
 
   deleteWord(id: number) {
     this.words = this.words.filter(w => w.id !== id);
+    this.reviewWordIds.delete(id);
   }
 
   getWordById(id: number): WordItem | undefined {
     const found = this.words.find(w => w.id === id);
     return found ? { ...found } : undefined;
+  }
+
+  markWordForReview(id: number): void {
+    if (this.words.some(word => word.id === id)) {
+      this.reviewWordIds.add(id);
+    }
+  }
+
+  clearWordFromReview(id: number): void {
+    this.reviewWordIds.delete(id);
+  }
+
+  getReviewWords(): WordItem[] {
+    return Array.from(this.reviewWordIds)
+      .map(id => this.getWordById(id))
+      .filter((word): word is WordItem => !!word);
   }
 }

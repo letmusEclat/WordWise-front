@@ -8,6 +8,7 @@ import { SectionCardComponent } from './components/section-card/section-card.com
 import { WordCardComponent } from './components/word-card/word-card.component';
 import { AddWordModalComponent } from './components/add-word-modal/add-word-modal.component';
 import { FormsModule } from '@angular/forms';
+import { LoginComponent } from './login/login.component';
 
 @NgModule({
   declarations: [
@@ -15,7 +16,8 @@ import { FormsModule } from '@angular/forms';
     LayoutComponent,
     SectionCardComponent,
     WordCardComponent,
-    AddWordModalComponent
+    AddWordModalComponent,
+    LoginComponent
   ],
   imports: [
     BrowserModule,

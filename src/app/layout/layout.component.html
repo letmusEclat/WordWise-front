@@ -28,7 +28,13 @@
 				<div class="main__avatar">
 					<img [src]="user.avatar" [alt]="user.name" />
 				</div>
-				<h2>{{ user.name }}</h2>
+				<div class="main__profile">
+					<h2>{{ user.name }}</h2>
+					<div class="main__category-tag" *ngIf="activeCategory as selectedCategory">
+						<span class="material-symbols-rounded">label</span>
+						{{ selectedCategory.name }}
+					</div>
+				</div>
 			</div>
 
 			<div class="main__sections">
@@ -49,7 +55,7 @@
 			</button>
 			<div class="practice__content">
 				<div class="practice" *ngIf="practiceWords.length && !practiceFinished; else practiceEmpty">
-				<div class="practice__panel">
+					<div class="practice__panel">
 					<div class="practice__card" [class.practice__card--revealed]="practiceRevealed" (click)="togglePracticeReveal()">
 						<ng-container *ngIf="!practiceRevealed; else practiceReveal">
 							<ng-container *ngIf="practiceCurrentWord?.imageUrl; else practicePlaceholder">
@@ -76,8 +82,8 @@
 						</button>
 					</div>
 				</div>
-			</div>
-			<aside class="practice__stats">
+				</div>
+				<aside class="practice__stats">
 				<div class="practice__stat-block">
 					<h4>Avance</h4>
 					<div class="practice__counter">
@@ -93,8 +99,8 @@
 					</div>
 					<p class="practice__note" *ngIf="practiceForgotten">{{ practiceForgotten }} por repasar</p>
 				</div>
-				<button type="button" class="btn btn--ghost practice__restart" *ngIf="practiceFinished" (click)="restartPractice()">Reiniciar sesión</button>
-			</aside>
+					<button type="button" class="btn btn--ghost practice__restart" *ngIf="practiceFinished" (click)="restartPractice()">Reiniciar sesión</button>
+				</aside>
 			</div>
 		</div>
 
@@ -129,36 +135,63 @@
 				<input class="search-bar__input" placeholder="Hinted search text" />
 				<div class="search-bar__icon material-symbols-rounded" title="Buscar">search</div>
 			</div>
-			<div class="search-category-chip" *ngIf="activeCategory">
+			<div class="search-category-chip" *ngIf="activeCategory as chipCategory">
 				<span class="material-symbols-rounded">label</span>
-				{{ activeCategory.name }}
+				{{ chipCategory.name }}
 				<button type="button" (click)="clearCategoryFilter()">×</button>
 			</div>
-			<div class="words-grid">
-				<app-word-card
-					[word]="{ title: 'Agregar', addCard: true }"
-					(add)="openAddWord()"
-				></app-word-card>
-				<app-word-card
-					*ngFor="let w of filteredWords"
-					[word]="w"
-					(delete)="requestDeleteWord($event)"
-					(edit)="openEditWord($event)"
-					(favoriteToggle)="toggleFavorite($event)"
-				></app-word-card>
+			<div
+				class="search-filter-chip"
+				*ngIf="searchMode === 'favorites'"
+			>
+				<span class="material-symbols-rounded">star</span>
+				Favoritas
+				<button type="button" (click)="clearSearchMode()">×</button>
 			</div>
+			<div
+				class="search-filter-chip"
+				*ngIf="searchMode === 'review'"
+			>
+				<span class="material-symbols-rounded">history</span>
+				Por repasar
+				<button type="button" (click)="clearSearchMode()">×</button>
+			</div>
+			<ng-container *ngIf="filteredWords.length; else emptySearch">
+				<div class="words-grid">
+					<app-word-card
+						*ngIf="searchMode !== 'review'"
+						[word]="{ title: 'Agregar', addCard: true }"
+						(add)="openAddWord()"
+					></app-word-card>
+					<app-word-card
+						*ngFor="let w of filteredWords"
+						[word]="w"
+						(delete)="requestDeleteWord($event)"
+						(edit)="openEditWord($event)"
+						(favoriteToggle)="toggleFavorite($event)"
+					></app-word-card>
+				</div>
+			</ng-container>
+			<ng-template #emptySearch>
+				<div class="search-empty" [class.search-empty--review]="searchMode === 'review'">
+					<p *ngIf="searchMode === 'favorites'">Aún no tienes palabras marcadas como favoritas.</p>
+					<p *ngIf="searchMode === 'review'">Cuando marques palabras como "No la recordé" en practicar aparecerán aquí para repasar.</p>
+					<p *ngIf="searchMode === 'all'">Agrega nuevas palabras para comenzar tu biblioteca.</p>
+					<button type="button" class="btn btn--primary" (click)="openAddWord()" *ngIf="searchMode !== 'review'">Agregar palabra</button>
+				</div>
+			</ng-template>
 		</div>
 
 		<!-- Overlay confirm delete word -->
-		<div class="delete-word-overlay" *ngIf="wordToDelete">
+		<div class="delete-word-overlay" *ngIf="wordToDelete as pendingDelete">
 			<div class="delete-word-overlay__panel">
 				<p class="delete-word-overlay__text">¿Está seguro que desea eliminar la palabra?</p>
-				<div class="delete-word-overlay__word-info" *ngIf="wordToDelete">
-					<span class="material-symbols-rounded" *ngIf="!wordToDelete.imageUrl">image</span>
-					<img *ngIf="wordToDelete.imageUrl" [src]="wordToDelete.imageUrl" [alt]="wordToDelete.title" />
+				<div class="delete-word-overlay__word-info">
+					<span class="material-symbols-rounded" *ngIf="!pendingDelete.imageUrl">image</span>
+					<img *ngIf="pendingDelete.imageUrl" [src]="pendingDelete.imageUrl" [alt]="pendingDelete.title" />
 					<div class="delete-word-overlay__meta">
-						<strong>{{ wordToDelete.title }}</strong>
-						<small *ngIf="wordToDelete.meaning">{{ wordToDelete.meaning }}</small>
+						<strong>{{ pendingDelete.title }}</strong>
+						<small *ngIf="pendingDelete.meaning">{{ pendingDelete.meaning }}</small>
 					</div>
 				</div>
 				<div class="delete-word-overlay__actions">
