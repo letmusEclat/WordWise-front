@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { WordItem } from '../components/word-card/word-card.component';
 import { NewWordForm } from '../components/add-word-modal/add-word-modal.component';
 import { WordDataService, Category } from '../services/word-data.service';
+import { AuthService, AuthUser } from '../services/auth.service';
 
 interface NavigationItem {
   label: string;
@@ -26,10 +27,7 @@ type CategoryView = Category & { active?: boolean };
   styleUrls: ['./layout.component.scss']
 })
 export class LayoutComponent implements OnInit {
-  public user = {
-    name: 'Juan Sebastian',
-    avatar: 'assets/img/avatar-juan.svg'
-  };
+  public user: AuthUser | null = null;
 
   // Vista actual; la app inicia en "Ver categorías"
   public currentView: BaseView | 'logout' | 'deleteAccount' = 'categories';
@@ -68,9 +66,12 @@ export class LayoutComponent implements OnInit {
   public practiceFinished = false;
   public practiceSessionSize = 10;
 
-  constructor(private data: WordDataService, private router: Router) {}
+  constructor(private data: WordDataService, private router: Router, private auth: AuthService) {}
 
   ngOnInit(): void {
+    this.auth.user$.subscribe(u => {
+      this.user = u;
+    });
     this.categories = this.data.getCategories().map(cat => ({ ...cat }));
     this.highlightDefaultCategory();
     this.words = this.data.getWords();
@@ -239,6 +240,7 @@ export class LayoutComponent implements OnInit {
   public confirmLogout(): void {
     // Placeholder de lógica real de logout (limpieza de sesión si aplica)
     // Navegar a pantalla de login
+    this.auth.clearUser();
     this.router.navigate(['/login']);
   }
 
@@ -249,6 +251,7 @@ export class LayoutComponent implements OnInit {
 
   public confirmDeleteAccount(): void {
     // Placeholder de lógica real de eliminación
+    this.auth.clearUser();
     this.router.navigate(['/login']);
   }
 

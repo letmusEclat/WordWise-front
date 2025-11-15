@@ -2,9 +2,9 @@
 	<aside class="sidebar">
 		<div class="sidebar__profile">
 			<div class="sidebar__avatar">
-				<img [src]="user.avatar" [alt]="user.name" />
+				<img [src]="(user?.avatar || 'assets/img/avatar-juan.svg')" [alt]="user?.displayName || 'Usuario'" />
 			</div>
-			<h1 class="sidebar__name">{{ user.name }}</h1>
+			<h1 class="sidebar__name">{{ user?.displayName || 'Invitado' }}</h1>
 		</div>
 
 		<nav class="sidebar__nav">
@@ -26,10 +26,10 @@
 		<div class="main__card" *ngIf="currentView === 'sections'">
 			<div class="main__header">
 				<div class="main__avatar">
-					<img [src]="user.avatar" [alt]="user.name" />
+					<img [src]="(user?.avatar || 'assets/img/avatar-juan.svg')" [alt]="user?.displayName || 'Usuario'" />
 				</div>
 				<div class="main__profile">
-					<h2>{{ user.name }}</h2>
+					<h2>{{ user?.displayName || 'Invitado' }}</h2>
 					<div class="main__category-tag" *ngIf="activeCategory as selectedCategory">
 						<span class="material-symbols-rounded">label</span>
 						{{ selectedCategory.name }}

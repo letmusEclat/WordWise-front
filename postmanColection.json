@@ -1,0 +1,202 @@
+{
+  "endpoints": {
+  
+      "method": "POST",
+      "url": "http://localhost:8080/login",
+      "body": {
+        "username": "juan.perez@ejemplo.com",
+        "password": "123456"
+      },
+      "response": {
+        "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
+        "idUsuario": 1,
+        "nombreUsuario": "juan.perez@ejemplo.com"
+      }
+    },
+    "register": {
+      "method": "POST",
+      "url": "http://localhost:8080/api/usuario/register",
+      "body": {
+        "username": "juan.perez@ejemplo.com",
+        "password": "123456"
+      },
+      "response": {
+        "username": "juan.perez@ejemplo.com",
+        "password": null
+      }
+    },
+    "deleteUser": {
+      "method": "DELETE",
+      "url": "http://localhost:8080/api/usuario",
+      "headers": {
+        "idUsuario": 1
+      }
+    },
+    "createCategory": {
+      "method": "POST",
+      "url": "http://localhost:8080/api/categoria",
+      "requestPart": {
+        "categoria": {
+          "nombre": "Inglés Medio",
+          "idUsuario": 1,
+          "descripcion": "Vocabulario medio para principiantes"
+        },
+        "imagen": "archivo.jpg/png"
+      },
+      "response": {
+        "id": 2,
+        "idUsuario": 1,
+        "nombreUsuario": null,
+        "nombre": "Inglés Medio",
+        "descripcion": "Vocabulario medio para principiantes",
+        "imagen": "https://res.cloudinary.com/.../categorias.png"
+      }
+    },
+    "listCategories": {
+      "method": "GET",
+      "url": "http://localhost:8080/api/categoria",
+      "headers": {
+        "idUsuario": 1
+      },
+      "response": {
+        "content": [
+          {
+            "id": 1,
+            "idUsuario": 1,
+            "nombreUsuario": "juan.perez@ejemplo.com",
+            "nombre": "Inglés Básico",
+            "descripcion": "Vocabulario básico para principiantes",
+            "imagen": "https://tuproyecto.supabase.co/.../ingles-basico.jpg"
+          },
+          {
+            "id": 2,
+            "idUsuario": 1,
+            "nombreUsuario": "juan.perez@ejemplo.com",
+            "nombre": "Inglés Medio",
+            "descripcion": "Vocabulario medio para principiantes",
+            "imagen": "https://res.cloudinary.com/.../categorias.png"
+          }
+        ]
+      }
+    },
+    
+    "createCard": {
+      "method": "POST",
+      "url": "http://localhost:8080/api/tarjeta/create",
+      "requestPart": {
+        "tarjeta": {
+          "idCategoria": 2,
+          "palabra": "ARBOL",
+          "traduccion": "TREE",
+          "esFavorita": true
+        },
+        "imagen": "archivo.jpg/png"
+      },
+      "response": {
+        "id": 3,
+        "idCategoria": 2,
+        "nombreCategoria": null,
+        "palabra": "ARBOL",
+        "traduccion": "TREE",
+        "imagen": "https://res.cloudinary.com/.../tarjetas.jpg",
+        "siglaEstado": "REP",
+        "esFavorita": true
+      }
+    },
+    "listCardsByCategory": {
+      "method": "GET",
+      "url": "http://localhost:8080/api/tarjeta/categoria/{idCategoria}",
+      "response": {
+        "content": [
+          {
+            "id": 3,
+            "idCategoria": 2,
+            "nombreCategoria": "Inglés Medio",
+            "palabra": "ARBOL",
+            "traduccion": "TREE",
+            "imagen": "https://res.cloudinary.com/.../tarjetas.jpg",
+            "siglaEstado": "REP",
+            "esFavorita": true
+          }
+        ]
+      }
+    },
+    "listFavoriteCards": {
+      "method": "GET",
+      "url": "http://localhost:8080/api/tarjeta/favorites/{idCategoria}?query=tree",
+      "note": "Si query es vacío o nulo devuelve todas las tarjetas favoritas."
+    },
+    "listCardsByState": {
+      "method": "GET",
+      "url": "http://localhost:8080/api/tarjeta/{idCategoria}/estado?query=",
+      "states": ["REP", "OLV"],
+      "note": "El parámetro query funciona como filtro."
+    },
+    "updateCardState": {
+      "method": "PUT",
+      "url": "http://localhost:8080/api/tarjeta/status/{idTarjeta}/{estado}",
+      "states": ["REP", "OLV"],
+      "response": {
+        "id": 3,
+        "idCategoria": 2,
+        "nombreCategoria": "Inglés Medio",
+        "palabra": "ARBOL",
+        "traduccion": "TREE",
+        "imagen": null,
+        "siglaEstado": "OLV",
+        "esFavorita": true
+      }
+    },
+    "deleteCard": {
+      "method": "DELETE",
+      "url": "http://localhost:8080/api/tarjeta/{idTarjeta}",
+      "response": {
+        "id": 3,
+        "idCategoria": 2,
+        "nombreCategoria": "Inglés Medio",
+        "palabra": "ARBOL",
+        "traduccion": "TREE",
+        "imagen": null,
+        "siglaEstado": "OLV",
+        "esFavorita": true
+      }
+    },
+    "updateCard": {
+      "method": "PUT",
+      "url": "http://localhost:8080/api/tarjeta",
+      "requestPart": {
+        "tarjeta": {
+          "id": 3,
+          "idCategoria": 2,
+          "palabra": "ARBOL",
+          "traduccion": "TREE",
+          "esFavorita": true
+        },
+        "imagen": "archivo.jpg/png"
+      },
+      "response": {
+        "id": 3,
+        "idCategoria": 2,
+        "nombreCategoria": null,
+        "palabra": "ARBOL",
+        "traduccion": "TREE",
+        "imagen": "https://res.cloudinary.com/.../tarjetas.jpg",
+        "siglaEstado": "REP",
+        "esFavorita": true
+      }
+    },
+    "getCardById": {
+      "method": "GET",
+      "url": "http://localhost:8080/api/tarjeta/{idTarjeta}",
+      "response": {
+        "id": 3,
+        "idCategoria": 2,
+        "nombreCategoria": null,
+        "palabra": "ARBOL",
+        "traduccion": "TREE",
+        "imagen": "https://res.cloudinary.com/.../tarjetas.jpg",
+        "siglaEstado": "REP",
+        "esFavorita": true
+      }
+    }
+  }

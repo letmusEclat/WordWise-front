@@ -1,6 +1,9 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
-import { NgForm } from '@angular/forms';
+import { FormBuilder, Validators, FormGroup } from '@angular/forms';
+import { PasswordValidators } from '../validators/password-validators';
+import { AuthCredentials } from '../components/auth-form/auth-form.component';
+import { AuthService } from '../services/auth.service';
 
 @Component({
   selector: 'app-login',
@@ -8,32 +11,22 @@ import { NgForm } from '@angular/forms';
   styleUrls: ['./login.component.scss']
 })
 export class LoginComponent {
-  public credentials = {
-    email: '',
-    password: ''
-  };
-
   public isSubmitting = false;
 
-  constructor(private router: Router) {}
+  // Legacy form retained temporarily if needed elsewhere; not used in template now.
+  public form: FormGroup = this.fb.group({});
 
-  public submitLogin(form: NgForm): void {
-    if (form.invalid) {
-      form.control.markAllAsTouched();
-      return;
-    }
+  constructor(private router: Router, private fb: FormBuilder, private auth: AuthService) {}
 
+  handleLogin(credentials: AuthCredentials) {
     this.isSubmitting = true;
-
-    // Simulamos una llamada asíncrona antes de redirigir.
     setTimeout(() => {
+      this.auth.setUser(credentials.email);
       this.router.navigate(['/app']);
-      this.isSubmitting = false;
     }, 450);
   }
 
-  public handleRegister(): void {
-    // Placeholder para futura navegación de registro.
-    console.log('Ir a registro');
+  goToRegister() {
+    this.router.navigate(['/register']);
   }
 }

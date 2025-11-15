@@ -137,6 +137,13 @@
   box-shadow: 0 0 0 3px rgba(217, 44, 75, 0.18) !important;
 }
 
+.login__error {
+  color: #c9394f;
+  font-size: 12px;
+  line-height: 1.3;
+  margin-top: 2px;
+}
+
 .login__button {
   border: none;
   border-radius: 999px;

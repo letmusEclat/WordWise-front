@@ -14,13 +14,13 @@
           <h1>Word<span>Wise</span></h1>
           <span class="material-symbols-rounded">grade</span>
         </div>
-        <p>Organiza y repasa tu vocabulario con sesiones personalizadas.</p>
+        <p>Crea tu cuenta y gestiona tu vocabulario con sesiones personalizadas.</p>
       </div>
 
       <div class="login__form-wrapper">
-        <app-auth-form mode="login" (submitCredentials)="handleLogin($event)"></app-auth-form>
-        <button type="button" class="login__button login__button--ghost" (click)="goToRegister()">Registrarse</button>
-        <a class="login__link" href="#">¿Has olvidado tu contraseña?</a>
+        <app-auth-form mode="register" (submitCredentials)="handleRegister($event)"></app-auth-form>
+        <button type="button" class="login__button login__button--ghost" (click)="goToLogin()">Iniciar sesión</button>
+        <a class="login__link" href="#">¿Necesitas ayuda?</a>
       </div>
     </div>
   </div>

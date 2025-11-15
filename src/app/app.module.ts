@@ -7,8 +7,10 @@ import { LayoutComponent } from './layout/layout.component';
 import { SectionCardComponent } from './components/section-card/section-card.component';
 import { WordCardComponent } from './components/word-card/word-card.component';
 import { AddWordModalComponent } from './components/add-word-modal/add-word-modal.component';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { LoginComponent } from './login/login.component';
+import { AuthFormComponent } from './components/auth-form/auth-form.component';
+import { RegisterComponent } from './register/register.component';
 
 @NgModule({
   declarations: [
@@ -17,12 +19,15 @@ import { LoginComponent } from './login/login.component';
     SectionCardComponent,
     WordCardComponent,
     AddWordModalComponent,
-    LoginComponent
+    LoginComponent,
+    AuthFormComponent,
+    RegisterComponent
   ],
   imports: [
     BrowserModule,
     AppRoutingModule,
-    FormsModule
+    FormsModule,
+    ReactiveFormsModule
   ],
   providers: [],
   bootstrap: [AppComponent]

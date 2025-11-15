@@ -1,0 +1,39 @@
+.register {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(120deg,#eef2ff,#f4f6ff 45%,#e3e9ff);
+  padding: 2rem 1rem;
+}
+
+.register__title {
+  font-size: 2rem;
+  margin-bottom: 1.2rem;
+  background: linear-gradient(90deg,#4a6cff,#6d89ff);
+  -webkit-background-clip: text;
+  color: transparent;
+  font-weight: 700;
+}
+
+.register__redirect {
+  margin-top: 1.4rem;
+  font-size: 0.85rem;
+  color: #333;
+}
+
+.register__link {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  color: #4a6cff;
+  cursor: pointer;
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.register__link:hover {
+  color: #2f4fb8;
+}
