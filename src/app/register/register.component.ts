@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthCredentials } from '../components/auth-form/auth-form.component';
 import { AuthService } from '../services/auth.service';
+import { finalize, switchMap } from 'rxjs';
 
 @Component({
   selector: 'app-register',
@@ -14,13 +15,17 @@ export class RegisterComponent {
   constructor(private router: Router, private auth: AuthService) {}
 
   handleRegister(credentials: AuthCredentials) {
+    if (this.creating) return;
     this.creating = true;
-    // Simulated async registration
-    setTimeout(() => {
-      this.creating = false;
-      this.auth.setUser(credentials.email);
-      this.router.navigate(['/app']);
-    }, 800);
+    this.auth.register(credentials.email, credentials.password)
+      .pipe(
+        switchMap(() => this.auth.login(credentials.email, credentials.password)),
+        finalize(() => this.creating = false)
+      )
+      .subscribe({
+        next: () => this.router.navigate(['/app']),
+        error: () => alert('No se pudo registrar. Intenta nuevamente.')
+      });
   }
 
   goToLogin() {

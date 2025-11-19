@@ -51,12 +51,19 @@ export class LayoutComponent implements OnInit {
   public categories: CategoryView[] = [];
   public words: WordItem[] = [];
   public activeCategory?: CategoryView;
+  private currentPage = 0; // índice de página
+  private pageSize = 10;
+  public totalPages = 1;
+  private selectedEstado?: string; // estado actual si se usa filtro estado
+  private favoritesMode = false; // modo favoritos
   public searchMode: 'all' | 'favorites' | 'review' = 'all';
   public reviewWords: WordItem[] = [];
 
   public showAddModal = false;
   public editingWord?: NewWordForm;
-  public wordToDelete?: WordItem;
+  public pendingDelete?: WordItem; // palabra pendiente de confirmación de eliminación
+  public deletingWord = false; // estado de carga para eliminación
+  public savingWord = false; // estado de carga para creación/actualización
   // Practice session state
   public practiceWords: WordItem[] = [];
   public practiceIndex = 0;
@@ -72,10 +79,19 @@ export class LayoutComponent implements OnInit {
     this.auth.user$.subscribe(u => {
       this.user = u;
     });
-    this.categories = this.data.getCategories().map(cat => ({ ...cat }));
-    this.highlightDefaultCategory();
-    this.words = this.data.getWords();
-    this.reviewWords = this.data.getReviewWords();
+    // Cargar categorías desde servidor (Page) sin fallback local.
+    this.data.fetchCategories().subscribe({
+      next: cats => {
+        this.categories = cats.map(cat => ({ ...cat }));
+        this.highlightDefaultCategory();
+        const first = this.categories[0];
+        if (first) this.loadCategory(first.id);
+      },
+      error: () => {
+        // En caso de error se deja lista vacía; se podría mostrar mensaje en UI.
+        this.categories = [];
+      }
+    });
   }
 
   get filteredWords(): WordItem[] {
@@ -149,12 +165,82 @@ export class LayoutComponent implements OnInit {
   }
 
   public onCategoryClick(cat: CategoryView): void {
-    this.setActiveCategory(cat.id);
+    this.loadCategory(cat.id, true);
     this.searchMode = 'all';
     this.currentView = 'sections';
     this.previousView = 'sections';
     this.sections = this.sections.map(item => ({ ...item, active: item.label === 'Practicar' }));
     this.navigation = this.navigation.map(i => ({ ...i, active: i.label === 'Perfil' }));
+  }
+
+  /** Carga inicial o cambio de categoría, reinicia filtros y página si corresponde */
+  private loadCategory(categoryId: string, resetFilters: boolean = false): void {
+    this.setActiveCategory(categoryId);
+    if (resetFilters) {
+      this.currentPage = 0;
+      this.selectedEstado = undefined;
+      this.favoritesMode = false;
+    }
+    this.fetchWords();
+  }
+
+  /** Selecciona estado y recarga */
+  public selectEstado(estado: string): void {
+    this.selectedEstado = estado;
+    this.favoritesMode = false;
+    this.currentPage = 0;
+    this.fetchWords();
+  }
+
+  /** Activa modo favoritos para categoría actual */
+  public showFavorites(): void {
+    this.favoritesMode = true;
+    this.selectedEstado = undefined;
+    this.currentPage = 0;
+    this.fetchWords();
+  }
+
+  /** Página siguiente (size=1) */
+  public nextPage(): void {
+    if (this.currentPage < this.totalPages - 1) {
+      this.currentPage++;
+      this.fetchWords();
+    }
+  }
+
+  /** Página anterior */
+  public prevPage(): void {
+    if (this.currentPage > 0) {
+      this.currentPage--;
+      this.fetchWords();
+    }
+  }
+
+  /** Orquesta llamado correcto al servicio según filtros activos */
+  private fetchWords(): void {
+    const categoryId = this.activeCategory?.id;
+    if (!categoryId) {
+      this.words = [];
+      return;
+    }
+    if (this.favoritesMode) {
+      this.data.fetchFavoriteWords(categoryId, undefined, this.currentPage, this.pageSize).subscribe(res => {
+        this.words = res.items;
+        this.totalPages = res.totalPages;
+      });
+      return;
+    }
+    if (this.selectedEstado) {
+      this.data.fetchWordsByCategoryAndEstado(categoryId, this.selectedEstado, undefined, this.currentPage, this.pageSize).subscribe(res => {
+        this.words = res.items;
+        this.totalPages = res.totalPages;
+      });
+      return;
+    }
+    this.data.fetchWordsByCategory(categoryId, this.currentPage, this.pageSize).subscribe(res => {
+      this.words = res.items;
+      this.totalPages = res.totalPages;
+    });
   }
 
   public openAddWord(): void {
@@ -170,44 +256,98 @@ export class LayoutComponent implements OnInit {
     const categoryId = form.category || this.activeCategory?.id || this.categories[0]?.id;
     const favorite = !!form.favorite;
     const imageUrl = form.imagePreview;
-
     if (form.id) {
-      this.data.updateWord({
+      // Actualización optimista de edición
+      this.savingWord = true;
+      const snapshot = [...this.words];
+      this.words = this.words.map(w => w.id === form.id ? { ...w, title: form.title, meaning: form.meaning, favorite, imageUrl, category: categoryId } : w);
+      this.data.updateWordRemote({
         id: form.id,
         title: form.title,
         meaning: form.meaning,
-        imageUrl,
+        category: categoryId!,
         favorite,
-        category: categoryId
+        imageFile: form.imageFile || null
+      }).subscribe({
+        next: updated => {
+          // Reconciliar con respuesta (puede cambiar imagen real)
+          this.words = this.words.map(w => w.id === updated.id ? { ...updated } : w);
+        },
+        error: () => {
+          this.words = snapshot; // revertir
+        },
+        complete: () => { this.savingWord = false; this.showAddModal = false; }
       });
     } else {
-      this.data.createWord({
+      // Creación optimista
+      this.savingWord = true;
+      const provisional = this.data.insertProvisionalWord({
         title: form.title,
         meaning: form.meaning,
-        imageUrl,
+        category: categoryId!,
         favorite,
-        category: categoryId
+        imageUrl
+      });
+      this.data.createWordRemote({
+        title: form.title,
+        meaning: form.meaning,
+        category: categoryId!,
+        favorite,
+        imageFile: form.imageFile || null
+      }).subscribe({
+        next: created => {
+          this.data.replaceWord(provisional.id!, created);
+        },
+        error: () => {
+          // Revertir creación optimista
+          this.words = this.words.filter(w => w.id !== provisional.id);
+        },
+        complete: () => { this.savingWord = false; this.showAddModal = false; }
       });
     }
-
-    this.refreshWords();
-    this.showAddModal = false;
   }
 
   public requestDeleteWord(word: WordItem): void {
-    this.wordToDelete = word;
+    this.pendingDelete = word;
   }
 
   public confirmDeleteWord(): void {
-    if (this.wordToDelete) {
-      this.data.deleteWord(this.wordToDelete.id!);
-      this.refreshWords();
-      this.wordToDelete = undefined;
+    if (!this.pendingDelete?.id || this.deletingWord) return;
+    this.deletingWord = true;
+    const deletingId = this.pendingDelete.id;
+    // Snapshot para posible revert en caso de error
+    const snapshot = [...this.words];
+    // Borrado optimista en la vista sin tocar otras tarjetas
+    this.words = this.words.filter(w => w.id !== deletingId);
+    // Ajuste de página si era la única y no estamos en la primera
+    const wasLastOnPage = snapshot.length === 1 && this.currentPage > 0;
+    if (wasLastOnPage) {
+      this.currentPage = Math.max(0, this.currentPage - 1);
     }
+    // Limpiar diálogo inmediato para sensación de rapidez
+    this.pendingDelete = undefined;
+    this.data.deleteWordRemote(deletingId).subscribe({
+      next: () => {
+        // Si tras el borrado la página queda vacía pero existen más páginas, cargar siguiente
+        if (this.words.length === 0) {
+          // Intento de carga silenciosa de nueva página manteniendo filtros
+          this.fetchWords();
+        }
+      },
+      error: () => {
+        // Revertimos estado local
+        this.words = snapshot;
+        this.deletingWord = false;
+      },
+      complete: () => {
+        this.deletingWord = false;
+      }
+    });
   }
 
   public cancelDeleteWord(): void {
-    this.wordToDelete = undefined;
+    if (this.deletingWord) return; // evita cancelar mientras se elimina
+    this.pendingDelete = undefined;
   }
 
   public openEditWord(word: WordItem): void {
@@ -224,11 +364,44 @@ export class LayoutComponent implements OnInit {
   }
 
   public toggleFavorite(word: WordItem): void {
-    word.favorite = !word.favorite;
-    if (word.id) {
-      this.data.updateWord({ ...word });
-      this.refreshWords();
-    }
+    if (!word.id) return;
+    const snapshot = [...this.words];
+    const newFav = !word.favorite;
+    // Optimista: actualizar inmediatamente (también afecta filtrado de favoritos)
+    this.words = this.words.map(w => w.id === word.id ? { ...w, favorite: newFav } : w);
+    this.data.updateWordRemote({
+      id: word.id,
+      title: word.title,
+      meaning: word.meaning || '',
+      category: word.category!,
+      favorite: newFav,
+      imageFile: null
+    }).subscribe({
+      next: updated => {
+        this.words = this.words.map(w => w.id === updated.id ? { ...updated } : w);
+      },
+      error: () => {
+        this.words = snapshot; // revertir
+      }
+    });
+    // También actualizar estado REP/OLV acorde al like/unlike
+    const estado = newFav ? 'REP' : 'OLV';
+    this.changeWordEstado(word, estado);
+  }
+
+  /** Cambio de estado (REP / OLV) optimista */
+  public changeWordEstado(word: WordItem, estado: string): void {
+    if (!word.id) return;
+    const snapshot = [...this.words];
+    // No sabemos si estado se refleja en UI; asumimos mantener palabra y quizá afectar filtros futuros
+    this.data.updateWordEstado(word.id, estado).subscribe({
+      next: updated => {
+        this.words = this.words.map(w => w.id === updated.id ? { ...updated } : w);
+      },
+      error: () => {
+        this.words = snapshot;
+      }
+    });
   }
 
   public cancelLogout(): void {

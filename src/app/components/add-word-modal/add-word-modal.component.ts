@@ -22,6 +22,7 @@ export class AddWordModalComponent implements OnChanges {
   @Input() word?: NewWordForm; // if provided, editing mode
   @Input() categories: Category[] = [];
   @Input() defaultCategoryId?: string;
+  @Input() saving: boolean = false; // estado de carga externo
 
   form: NewWordForm = {
     title: '',

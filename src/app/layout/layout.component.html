@@ -171,6 +171,15 @@
 						(favoriteToggle)="toggleFavorite($event)"
 					></app-word-card>
 				</div>
+				<div class="search-paginator" *ngIf="totalPages > 1">
+					<button type="button" class="btn btn--ghost" (click)="prevPage()" [disabled]="currentPage === 0">
+						<span class="material-symbols-rounded">chevron_left</span>
+					</button>
+					<span class="search-paginator__info">Página {{ currentPage + 1 }} de {{ totalPages }}</span>
+					<button type="button" class="btn btn--ghost" (click)="nextPage()" [disabled]="currentPage >= totalPages - 1">
+						<span class="material-symbols-rounded">chevron_right</span>
+					</button>
+				</div>
 			</ng-container>
 			<ng-template #emptySearch>
 				<div class="search-empty" [class.search-empty--review]="searchMode === 'review'">
@@ -183,7 +192,7 @@
 		</div>
 
 		<!-- Overlay confirm delete word -->
-		<div class="delete-word-overlay" *ngIf="wordToDelete as pendingDelete">
+		<div class="delete-word-overlay" *ngIf="pendingDelete">
 			<div class="delete-word-overlay__panel">
 				<p class="delete-word-overlay__text">¿Está seguro que desea eliminar la palabra?</p>
 				<div class="delete-word-overlay__word-info">
@@ -195,8 +204,15 @@
 					</div>
 				</div>
 				<div class="delete-word-overlay__actions">
-					<button type="button" class="btn btn--ghost" (click)="cancelDeleteWord()">Cancelar</button>
-					<button type="button" class="btn btn--danger" (click)="confirmDeleteWord()">Eliminar</button>
+					<button type="button" class="btn btn--ghost" (click)="cancelDeleteWord()" [disabled]="deletingWord">Cancelar</button>
+					<button type="button" class="btn btn--danger" (click)="confirmDeleteWord()" [disabled]="deletingWord">
+						<ng-container *ngIf="!deletingWord; else deletingTpl">Eliminar</ng-container>
+					</button>
+					<ng-template #deletingTpl>
+						<span class="loading-inline">
+							<span class="spinner spinner--danger"></span> Eliminando...
+						</span>
+					</ng-template>
 				</div>
 			</div>
 		</div>
@@ -226,6 +242,7 @@
 			[word]="editingWord"
 			[categories]="categories"
 			[defaultCategoryId]="activeCategory?.id || categories[0]?.id"
+			[saving]="savingWord"
 			(save)="saveNewWord($event)"
 			(cancel)="cancelAddWord()"
 		></app-add-word-modal>

@@ -1,5 +1,7 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, Observable, tap, map } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../environments/environment';
 
 export interface AuthUser {
   email: string;
@@ -8,6 +10,14 @@ export interface AuthUser {
 }
 
 const STORAGE_KEY = 'ww_current_user';
+const TOKEN_KEY = 'ww_token';
+const USER_ID_KEY = 'ww_user_id';
+
+interface LoginResponse {
+  token: string;
+  idUsuario: number;
+  nombreUsuario: string;
+}
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -25,6 +35,8 @@ export class AuthService {
       .join(' ');
   }
 
+  constructor(private http: HttpClient) {}
+
   setUser(email: string, avatar?: string) {
     const user: AuthUser = {
       email,
@@ -37,8 +49,41 @@ export class AuthService {
     } catch {}
   }
 
+  login(username: string, password: string): Observable<AuthUser> {
+    const url = `${environment.apiBaseUrl}/login`;
+    return this.http.post<LoginResponse>(url, { username, password }).pipe(
+      tap(res => {
+        try {
+          localStorage.setItem(TOKEN_KEY, res.token);
+          localStorage.setItem(USER_ID_KEY, String(res.idUsuario));
+        } catch {}
+        this.setUser(res.nombreUsuario);
+      }),
+      map(() => this.userSubject.value as AuthUser)
+    );
+  }
+
+  register(username: string, password: string): Observable<void> {
+    const url = `${environment.apiBaseUrl}/api/usuario/register`;
+    return this.http.post(url, { username, password }).pipe(tap(() => {
+      // Opcional: auto-login después del registro
+      this.setUser(username);
+    })) as Observable<void>;
+  }
+
+  deleteAccount(): Observable<void> {
+    const url = `${environment.apiBaseUrl}/api/usuario`;
+    const idUsuario = this.getUserId();
+    return this.http.delete(url, { headers: { idUsuario: String(idUsuario) } }).pipe(tap(() => this.clearUser())) as Observable<void>;
+  }
+
+  getToken(): string | null { return localStorage.getItem(TOKEN_KEY); }
+  getUserId(): number | null { const raw = localStorage.getItem(USER_ID_KEY); return raw ? Number(raw) : null; }
+
   clearUser() {
     try { localStorage.removeItem(STORAGE_KEY); } catch {}
+    try { localStorage.removeItem(TOKEN_KEY); } catch {}
+    try { localStorage.removeItem(USER_ID_KEY); } catch {}
     this.userSubject.next(null);
   }
 

@@ -23,4 +23,7 @@
 .btn--primary { background:#2e4358; color:#fff; }
 .btn--primary:disabled { opacity:.4; cursor:not-allowed; }
 .btn--primary:hover:not(:disabled) { background:#203444; }
+.loading-inline { display:inline-flex; align-items:center; gap:8px; }
+.spinner { width:16px; height:16px; border:2px solid rgba(255,255,255,0.4); border-top-color:#fff; border-radius:50%; animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
 @media (max-width:720px){ .modal__panel { padding:36px 32px 32px; border-radius:26px; } }

@@ -296,6 +296,12 @@
 .search-empty--review { color:#2b3c51; }
 .search-empty .btn { min-width:140px; }
 
+/* Paginator bottom centered */
+.search-paginator { margin:42px auto 0; display:flex; align-items:center; justify-content:center; gap:22px; }
+.search-paginator__info { font-size:13px; font-weight:500; color:#2e4358; letter-spacing:.5px; }
+.search-paginator .btn { min-width:46px; padding:8px 14px; box-shadow:none; }
+.search-paginator .btn[disabled] { opacity:.45; cursor:not-allowed; }
+
 /* Logout confirmation */
 .main__card--logout { max-width: 760px; display:flex; align-items:center; justify-content:center; }
 .logout-confirm { text-align:center; width:100%; }
@@ -319,6 +325,10 @@
 .delete-word-overlay__actions { display:flex; gap:20px; justify-content:center; }
 .delete-word-overlay .btn--danger { min-width:120px; }
 .delete-word-overlay .btn--ghost { min-width:120px; }
+.delete-word-overlay .btn[disabled] { opacity:.45; cursor:not-allowed; }
+.delete-word-overlay .loading-inline { display:inline-flex; align-items:center; gap:8px; }
+.delete-word-overlay .spinner { width:16px; height:16px; border:2px solid rgba(255,255,255,0.35); border-top-color:#fff; border-radius:50%; animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
 
 /* Shared button styles for confirmation cards */
 .btn { border:none; cursor:pointer; font-size:14px; padding:10px 26px; border-radius:24px; font-weight:500; line-height:1; display:inline-flex; align-items:center; justify-content:center; box-shadow:0 4px 12px rgba(30,50,70,0.15); transition:background 160ms ease, box-shadow 160ms ease, color 160ms ease; }
