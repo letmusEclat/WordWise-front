@@ -108,6 +108,30 @@ export class WordDataService {
     );
   }
 
+  /** Tarjetas por estado (REP/OLV) para usuario actual (todas las categorías) */
+  fetchWordsByEstado(estado: string, page: number = 0, size: number = 10): Observable<{ items: WordItem[]; page: number; size: number; totalPages: number; totalElements: number }> {
+    const idUsuario = this.auth.getUserId();
+    if (!idUsuario) {
+      return new Observable<{ items: WordItem[]; page: number; size: number; totalPages: number; totalElements: number }>(subscriber => {
+        subscriber.next({ items: [], page: 0, size, totalPages: 0, totalElements: 0 });
+        subscriber.complete();
+      });
+    }
+    const headers = new HttpHeaders({ idUsuario: String(idUsuario) });
+    const params = new HttpParams().set('page', page).set('size', size);
+    const url = `${environment.apiBaseUrl}/api/tarjeta/estado/${estado}`;
+    return this.http.get<any>(url, { headers, params }).pipe(
+      map(p => ({
+        items: (p.content || []).map((t: any) => this.mapTarjetaToWordItem(t)),
+        page: p.number ?? page,
+        size: p.size ?? size,
+        totalPages: p.totalPages ?? 1,
+        totalElements: p.totalElements ?? (p.content?.length ?? 0)
+      })),
+      map(res => { this.words = res.items; return res; })
+    );
+  }
+
   /** Obtiene una tarjeta por ID */
   fetchWordById(idTarjeta: number): Observable<WordItem | undefined> {
     const url = `${environment.apiBaseUrl}/api/tarjeta/${idTarjeta}`;

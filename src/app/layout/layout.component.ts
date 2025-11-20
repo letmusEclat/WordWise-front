@@ -45,7 +45,8 @@ export class LayoutComponent implements OnInit {
     { label: 'Avance', icon: 'assets/icons/mountain-flag.svg' },
     { label: 'Favoritos', icon: 'assets/icons/favorite-star.svg' },
     { label: 'Practicar', icon: 'assets/icons/calendar-sun.svg', active: true },
-    { label: 'Por repasar', icon: 'assets/icons/flashcards.svg' }
+    { label: 'Olvidadas', icon: 'assets/icons/flashcards.svg' },
+    { label: 'Por repasar', icon: 'psychology' }
   ];
 
   public categories: CategoryView[] = [];
@@ -56,7 +57,7 @@ export class LayoutComponent implements OnInit {
   public totalPages = 1;
   private selectedEstado?: string; // estado actual si se usa filtro estado
   private favoritesMode = false; // modo favoritos
-  public searchMode: 'all' | 'favorites' | 'review' = 'all';
+  public searchMode: 'all' | 'favorites' | 'review' | 'forgotten' = 'all';
   public reviewWords: WordItem[] = [];
 
   public showAddModal = false;
@@ -103,6 +104,10 @@ export class LayoutComponent implements OnInit {
 
     if (this.searchMode === 'review') {
       return this.reviewWords.filter(w => !categoryId || w.category === categoryId);
+    }
+
+    if (this.searchMode === 'forgotten') {
+      return this.words.filter(w => !categoryId || w.category === categoryId);
     }
 
     if (!categoryId) return this.words;
@@ -154,8 +159,12 @@ export class LayoutComponent implements OnInit {
       this.activateSearchView('favorites', { preserveCategory: true });
       return;
     }
-    if (section.label === 'Por repasar') {
+    if (section.label === 'Olvidadas') {
       this.activateSearchView('review', { preserveCategory: true });
+      return;
+    }
+    if (section.label === 'Por repasar') {
+      this.activateSearchView('forgotten', { preserveCategory: true });
       return;
     }
     this.currentView = 'sections';
@@ -272,6 +281,11 @@ export class LayoutComponent implements OnInit {
         next: updated => {
           // Reconciliar con respuesta (puede cambiar imagen real)
           this.words = this.words.map(w => w.id === updated.id ? { ...updated } : w);
+          // Si cambió de categoría y estamos filtrando por categoría, recargar
+          const changedCategory = this.activeCategory && updated.category !== this.activeCategory.id;
+          if (changedCategory && this.searchMode === 'all') {
+            this.fetchWords();
+          }
         },
         error: () => {
           this.words = snapshot; // revertir
@@ -288,6 +302,8 @@ export class LayoutComponent implements OnInit {
         favorite,
         imageUrl
       });
+      // Actualizar vista local inmediatamente
+      this.words = [provisional, ...this.words];
       this.data.createWordRemote({
         title: form.title,
         meaning: form.meaning,
@@ -297,6 +313,8 @@ export class LayoutComponent implements OnInit {
       }).subscribe({
         next: created => {
           this.data.replaceWord(provisional.id!, created);
+          // Actualizar vista con la palabra real del backend
+          this.words = this.words.map(w => w.id === provisional.id ? created : w);
         },
         error: () => {
           // Revertir creación optimista
@@ -329,8 +347,10 @@ export class LayoutComponent implements OnInit {
     this.data.deleteWordRemote(deletingId).subscribe({
       next: () => {
         // Si tras el borrado la página queda vacía pero existen más páginas, cargar siguiente
-        if (this.words.length === 0) {
-          // Intento de carga silenciosa de nueva página manteniendo filtros
+        if (this.words.length === 0 && this.totalPages > 1) {
+          if (this.currentPage > 0) {
+            this.currentPage--;
+          }
           this.fetchWords();
         }
       },
@@ -379,6 +399,16 @@ export class LayoutComponent implements OnInit {
     }).subscribe({
       next: updated => {
         this.words = this.words.map(w => w.id === updated.id ? { ...updated } : w);
+        // Si estamos en modo favoritos y quitamos el favorito, recargar para quitar de vista
+        if (this.searchMode === 'favorites' && !newFav) {
+          const categoryId = this.activeCategory?.id;
+          if (categoryId) {
+            this.data.fetchFavoriteWords(categoryId, undefined, this.currentPage, this.pageSize).subscribe(res => {
+              this.words = res.items;
+              this.totalPages = res.totalPages;
+            });
+          }
+        }
       },
       error: () => {
         this.words = snapshot; // revertir
@@ -393,10 +423,16 @@ export class LayoutComponent implements OnInit {
   public changeWordEstado(word: WordItem, estado: string): void {
     if (!word.id) return;
     const snapshot = [...this.words];
-    // No sabemos si estado se refleja en UI; asumimos mantener palabra y quizá afectar filtros futuros
     this.data.updateWordEstado(word.id, estado).subscribe({
       next: updated => {
         this.words = this.words.map(w => w.id === updated.id ? { ...updated } : w);
+        // Si estamos en modo "olvidadas" y cambiamos a REP, recargar para quitar de vista
+        if (this.searchMode === 'forgotten' && estado === 'REP') {
+          this.data.fetchWordsByEstado('OLV', this.currentPage, this.pageSize).subscribe(res => {
+            this.words = res.items;
+            this.totalPages = res.totalPages;
+          });
+        }
       },
       error: () => {
         this.words = snapshot;
@@ -444,17 +480,44 @@ export class LayoutComponent implements OnInit {
   private setActiveCategory(categoryId: string | undefined): void {
     this.categories = this.categories.map(c => ({ ...c, active: !!categoryId && c.id === categoryId }));
     this.activeCategory = categoryId ? this.categories.find(c => c.id === categoryId) : undefined;
+    
+    // Si estamos en modo favoritos (sistema de secciones), recargar favoritos de la nueva categoría
+    if (this.searchMode === 'favorites' && categoryId) {
+      this.data.fetchFavoriteWords(categoryId, undefined, this.currentPage, this.pageSize).subscribe(res => {
+        this.words = res.items;
+        this.totalPages = res.totalPages;
+      });
+    }
   }
 
-  private activateSearchView(mode: 'all' | 'favorites' | 'review', options: { preserveCategory?: boolean } = {}): void {
+  private activateSearchView(mode: 'all' | 'favorites' | 'review' | 'forgotten', options: { preserveCategory?: boolean } = {}): void {
     this.searchMode = mode;
     this.currentView = 'search';
     this.previousView = 'search';
     const categoryId = options.preserveCategory ? this.activeCategory?.id : undefined;
     this.setActiveCategory(categoryId);
     this.navigation = this.navigation.map(i => ({ ...i, active: i.label === 'Buscar palabra' }));
+    
+    if (mode === 'favorites') {
+      // Cargar favoritos desde backend para sincronizar cambios
+      if (categoryId) {
+        this.data.fetchFavoriteWords(categoryId, undefined, this.currentPage, this.pageSize).subscribe(res => {
+          this.words = res.items;
+          this.totalPages = res.totalPages;
+        });
+      }
+    }
+    
     if (mode === 'review') {
       this.reviewWords = this.data.getReviewWords();
+    }
+    
+    if (mode === 'forgotten') {
+      // Cargar palabras con estado OLV desde backend
+      this.data.fetchWordsByEstado('OLV', this.currentPage, this.pageSize).subscribe(res => {
+        this.words = res.items;
+        this.totalPages = res.totalPages;
+      });
     }
   }
 
@@ -507,6 +570,8 @@ export class LayoutComponent implements OnInit {
     if (this.practiceCurrentWord.id) {
       this.data.clearWordFromReview(this.practiceCurrentWord.id);
       this.reviewWords = this.data.getReviewWords();
+      // Actualizar estado en backend a REP (Por repasar/Aprendida)
+      this.changeWordEstado(this.practiceCurrentWord, 'REP');
     }
     this.practiceLearned++;
     this.advancePracticeQueue();
@@ -519,6 +584,8 @@ export class LayoutComponent implements OnInit {
     if (this.practiceCurrentWord.id) {
       this.data.markWordForReview(this.practiceCurrentWord.id);
       this.reviewWords = this.data.getReviewWords();
+      // Actualizar estado en backend a OLV (Olvidada)
+      this.changeWordEstado(this.practiceCurrentWord, 'OLV');
     }
     this.practiceForgotten++;
     this.advancePracticeQueue();

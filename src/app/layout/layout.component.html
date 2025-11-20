@@ -153,13 +153,21 @@
 				*ngIf="searchMode === 'review'"
 			>
 				<span class="material-symbols-rounded">history</span>
+				Olvidadas
+				<button type="button" (click)="clearSearchMode()">×</button>
+			</div>
+			<div
+				class="search-filter-chip"
+				*ngIf="searchMode === 'forgotten'"
+			>
+				<span class="material-symbols-rounded">psychology</span>
 				Por repasar
 				<button type="button" (click)="clearSearchMode()">×</button>
 			</div>
 			<ng-container *ngIf="filteredWords.length; else emptySearch">
 				<div class="words-grid">
 					<app-word-card
-						*ngIf="searchMode !== 'review'"
+						*ngIf="searchMode !== 'review' && searchMode !== 'forgotten'"
 						[word]="{ title: 'Agregar', addCard: true }"
 						(add)="openAddWord()"
 					></app-word-card>
@@ -184,9 +192,10 @@
 			<ng-template #emptySearch>
 				<div class="search-empty" [class.search-empty--review]="searchMode === 'review'">
 					<p *ngIf="searchMode === 'favorites'">Aún no tienes palabras marcadas como favoritas.</p>
-					<p *ngIf="searchMode === 'review'">Cuando marques palabras como "No la recordé" en practicar aparecerán aquí para repasar.</p>
+					<p *ngIf="searchMode === 'review'">No tienes palabras marcadas como olvidadas. Las palabras que marques como "No la recordé" aparecerán aquí.</p>
+					<p *ngIf="searchMode === 'forgotten'">Cuando marques palabras como "No la recordé" en practicar aparecerán aquí para repasar.</p>
 					<p *ngIf="searchMode === 'all'">Agrega nuevas palabras para comenzar tu biblioteca.</p>
-					<button type="button" class="btn btn--primary" (click)="openAddWord()" *ngIf="searchMode !== 'review'">Agregar palabra</button>
+					<button type="button" class="btn btn--primary" (click)="openAddWord()" *ngIf="searchMode !== 'review' && searchMode !== 'forgotten'">Agregar palabra</button>
 				</div>
 			</ng-template>
 		</div>

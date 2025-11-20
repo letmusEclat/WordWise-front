@@ -1,6 +1,6 @@
 <div class="section-card__icon" *ngIf="icon">
   <img *ngIf="icon.endsWith('.svg') || icon.endsWith('.png') || icon.endsWith('.jpg')" [src]="icon" [alt]="label" />
-  <span *ngIf="!(icon.endsWith('.svg') || icon.endsWith('.png') || icon.endsWith('.jpg'))">{{ icon }}</span>
+  <span class="material-symbols-rounded" *ngIf="!(icon.endsWith('.svg') || icon.endsWith('.png') || icon.endsWith('.jpg'))">{{ icon }}</span>
 </div>
 <div class="section-card__content">
   <span class="section-card__label">{{ label }}</span>
