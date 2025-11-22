@@ -59,8 +59,9 @@ export class WordDataService {
    * Backend fuerza PageRequest size=1, por lo que devolverá de a una tarjeta por página.
    * page controla el número de página solicitada.
    */
-  fetchWordsByCategory(categoryId: string, page: number = 0, size: number = 10): Observable<{ items: WordItem[]; page: number; size: number; totalPages: number; totalElements: number }> {
-    const params = new HttpParams().set('page', page).set('size', size);
+  fetchWordsByCategory(categoryId: string, query?: string, page: number = 0, size: number = 10): Observable<{ items: WordItem[]; page: number; size: number; totalPages: number; totalElements: number }> {
+    let params = new HttpParams().set('page', page).set('size', size);
+    if (query) params = params.set('query', query);
     const url = `${environment.apiBaseUrl}/api/tarjeta/categoria/${categoryId}`;
     return this.http.get<any>(url, { params }).pipe(
       map(p => ({

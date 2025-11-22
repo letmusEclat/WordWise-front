@@ -132,8 +132,21 @@
 		<div class="main__card main__card--search" *ngIf="currentView === 'search'">
 			<div class="search-bar">
 				<div class="search-bar__menu material-symbols-rounded" title="Menú">menu</div>
-				<input class="search-bar__input" placeholder="Hinted search text" />
-				<div class="search-bar__icon material-symbols-rounded" title="Buscar">search</div>
+				<input 
+					class="search-bar__input" 
+					placeholder="Buscar palabras..." 
+					[(ngModel)]="searchQuery"
+					(ngModelChange)="onSearchInput($event)"
+				/>
+				<button 
+					type="button" 
+					class="search-bar__icon material-symbols-rounded" 
+					title="Limpiar búsqueda"
+					*ngIf="searchQuery"
+					(click)="clearSearch()"
+					style="cursor: pointer;"
+				>close</button>
+				<div class="search-bar__icon material-symbols-rounded" title="Buscar" *ngIf="!searchQuery">search</div>
 			</div>
 			<div class="search-category-chip" *ngIf="activeCategory as chipCategory">
 				<span class="material-symbols-rounded">label</span>

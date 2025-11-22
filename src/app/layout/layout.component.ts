@@ -59,6 +59,8 @@ export class LayoutComponent implements OnInit {
   private favoritesMode = false; // modo favoritos
   public searchMode: 'all' | 'favorites' | 'review' | 'forgotten' = 'all';
   public reviewWords: WordItem[] = [];
+  public searchQuery: string = '';
+  private searchTimeout: any;
 
   public showAddModal = false;
   public editingWord?: NewWordForm;
@@ -232,24 +234,67 @@ export class LayoutComponent implements OnInit {
       this.words = [];
       return;
     }
+    const query = this.searchQuery.trim() || undefined;
     if (this.favoritesMode) {
-      this.data.fetchFavoriteWords(categoryId, undefined, this.currentPage, this.pageSize).subscribe(res => {
+      this.data.fetchFavoriteWords(categoryId, query, this.currentPage, this.pageSize).subscribe(res => {
         this.words = res.items;
         this.totalPages = res.totalPages;
       });
       return;
     }
     if (this.selectedEstado) {
-      this.data.fetchWordsByCategoryAndEstado(categoryId, this.selectedEstado, undefined, this.currentPage, this.pageSize).subscribe(res => {
+      this.data.fetchWordsByCategoryAndEstado(categoryId, this.selectedEstado, query, this.currentPage, this.pageSize).subscribe(res => {
         this.words = res.items;
         this.totalPages = res.totalPages;
       });
       return;
     }
-    this.data.fetchWordsByCategory(categoryId, this.currentPage, this.pageSize).subscribe(res => {
+    this.data.fetchWordsByCategory(categoryId, query, this.currentPage, this.pageSize).subscribe(res => {
       this.words = res.items;
       this.totalPages = res.totalPages;
     });
+  }
+
+  public onSearchInput(query: string): void {
+    this.searchQuery = query;
+    // Cancelar búsqueda anterior si existe
+    if (this.searchTimeout) {
+      clearTimeout(this.searchTimeout);
+    }
+    
+    // Si el query está vacío, recargar inmediatamente sin debounce
+    if (!query.trim()) {
+      this.currentPage = 0;
+      if (this.searchMode === 'all' || this.searchMode === 'favorites') {
+        this.fetchWords();
+      } else if (this.searchMode === 'forgotten') {
+        this.data.fetchWordsByEstado('OLV', this.currentPage, this.pageSize).subscribe(res => {
+          this.words = res.items;
+          this.totalPages = res.totalPages;
+        });
+      }
+      return;
+    }
+    
+    // Debounce de 300ms para evitar demasiadas peticiones
+    this.searchTimeout = setTimeout(() => {
+      this.currentPage = 0; // Resetear a primera página
+      if (this.searchMode === 'all' || this.searchMode === 'favorites') {
+        this.fetchWords();
+      } else if (this.searchMode === 'forgotten') {
+        // Búsqueda en modo forgotten (estado OLV)
+        this.data.fetchWordsByEstado('OLV', this.currentPage, this.pageSize).subscribe(res => {
+          this.words = res.items;
+          this.totalPages = res.totalPages;
+        });
+      }
+    }, 300);
+  }
+
+  public clearSearch(): void {
+    this.searchQuery = '';
+    this.currentPage = 0;
+    this.fetchWords();
   }
 
   public openAddWord(): void {
@@ -494,7 +539,14 @@ export class LayoutComponent implements OnInit {
     this.searchMode = mode;
     this.currentView = 'search';
     this.previousView = 'search';
-    const categoryId = options.preserveCategory ? this.activeCategory?.id : undefined;
+    this.searchQuery = ''; // Limpiar búsqueda al cambiar modo
+    let categoryId = options.preserveCategory ? this.activeCategory?.id : undefined;
+    
+    // Si no hay categoría seleccionada, usar la primera disponible
+    if (!categoryId && this.categories.length > 0) {
+      categoryId = this.categories[0].id;
+    }
+    
     this.setActiveCategory(categoryId);
     this.navigation = this.navigation.map(i => ({ ...i, active: i.label === 'Buscar palabra' }));
     
@@ -518,6 +570,11 @@ export class LayoutComponent implements OnInit {
         this.words = res.items;
         this.totalPages = res.totalPages;
       });
+    }
+    
+    // Si es modo 'all', cargar palabras de la categoría
+    if (mode === 'all' && categoryId) {
+      this.fetchWords();
     }
   }
 
